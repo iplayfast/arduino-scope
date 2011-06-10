@@ -30,30 +30,31 @@
 FILE *usb;
 
 #define TRACELENGTH 10000
+#define CHANNELNUM 2
 class line
 {
-  int v[TRACELENGTH];
-  int t[TRACELENGTH];	// timing
+  int t[TRACELENGTH];
+  int v[CHANNELNUM][TRACELENGTH];
   int end;
-  bool visible;
-  int scale;
+  bool visible[CHANNELNUM];
+  int scale[CHANNELNUM];
 public:
-  line() { scale = 1; visible = true; end = 0; }
-  void AddSample(int ms,int val) { v[end]=val; t[end]=ms; end++; if (end==TRACELENGTH) end--;  }
-  int GetSample(int start,int pasttime) const { if (start<0) start=0; if (start+pasttime>=end) return 0; else return v[start+pasttime] / scale; }
-  int GetTime(int start,int pasttime) const { if (start<0) start=0; if (start+pasttime>=end) return 0; else return t[start+pasttime] / scale; }
-  void IncScale() { if (scale>1) scale--; }
-  void DecScale() { if (scale<512) scale++; }
-  bool IsVisible() const { return visible; }
-  void ToggleVisible() { visible = !visible; }
-  int GetScale() const { return scale; }
+  line() { for (int i=0; i< CHANNELNUM; i++) {visible[i] = true;  scale[i] = 1;}; end = 0; }
+  void AddSample(int* val) { t[end]=*val++; for (int i=0; i< CHANNELNUM; i++){ v[i][end] = *val++; }; end++; if (end==TRACELENGTH) end--;  }
+  int GetChSample(int start, int ch) const { if (start<0) start=0; if (start>=end) return 0; else return v[ch][start] / scale[ch]; }
+  int GetTime(int start) { return t[start]; }
+  void IncScale(int ch) { if (scale[ch]>1) scale[ch]--; }
+  void DecScale(int ch) { if (scale[ch]<512) scale[ch]++; }
+  bool IsVisible(int ch) const { return visible[ch]; }
+  void ToggleVisible(int ch) { visible[ch] = !visible[ch]; }
+  int GetScale(int ch) const { return scale[ch]; }
   void Reset() { end=0; }
   int GetBaseTime() const { return t[0]; }
   int GetMaxTime() const { if (end>0) return t[end-1]; else return t[0]; }
   int GetEnd() const { return end; }
-};  
-line lines[2];
+};
 
+line lines;
 char buff[100]="";
 int buffcount=0;
     
@@ -61,19 +62,17 @@ void UpdateSamples()
 {
       
       int t,f,s;
+      int input[CHANNELNUM+1];
 static int lastf=0,lasts=0;
     if (!feof(usb))
     {
       fgets(buff,100,usb);
-      sscanf(buff,"%d %d %d",&t,&f,&s);
+      sscanf(buff,"%d %d %d",&input[0],&input[1],&input[2]);
       buffcount++;
     }
     else { s = lasts; f = lastf;}
       //printf("%s %d %d\n",buff,f,s);
-      lines[0].AddSample(t,f);
-      lines[1].AddSample(t,s);
-   lasts = s;
-   lastf = f;
+      lines.AddSample(input);
    char *ch = buff;
    while(*ch && (*ch!='\n') && (*ch!='\r'))
       ch++;
@@ -83,8 +82,7 @@ static int lastf=0,lasts=0;
 }
 void ResetSamples()
 {
-  lines[0].Reset();
-  lines[1].Reset();
+  lines.Reset();
 }
 
 typedef struct {
@@ -327,6 +325,7 @@ void killsound()
 {
    pa_simple_free(s);
 }
+//	printf("%d %d\n",x,70 + lines[0].GetSample(x));
 
 int initSound(int bitsPerSample, int numberOfChannels, int samplingRate)
 {
@@ -475,25 +474,16 @@ void DrawLine(GLint x1,GLint y1,GLint x2,GLint y2)
 
 int drawGLLine(int line, int yoffset) 
 {
-      if (lines[line].IsVisible())
+      if (lines.IsVisible(line))
       {
 	glBegin(GL_LINES);
 	if (line == 0) glColor3f(1.0f, 1.0f, 0.0f);
 	else glColor3ub(0,255,0);
-	int top = lines[line].GetEnd();
+	int top = lines.GetEnd();
 	if (top<SampleRate)top=SampleRate;
 	for(int x=0;x<top;x++)
 	{
-/*	unsigned int bt = lines[1].GetBaseTime();
-	unsigned int mt = lines[1].GetMaxTime();
-	unsigned int t = lines[1].GetTime(SampleStart,x);
-	if (bt==mt)
-	    t = 0;
-	else
-	    t = (400 * (t-bt) / (mt-bt));	
-	glVertex2d(20+t,470 - lines[1].GetSample(SampleStart,x));
-*/		glVertex2d(20+(int)((400.0*x)/top),yoffset - lines[line].GetSample(SampleStart,x));
-//	printf("%d %d\n",x,70 + lines[0].GetSample(x));
+		glVertex2d(20+(int)((400.0*x)/top),yoffset - lines.GetChSample(SampleStart+x, line));
 	}
 	glEnd();
       }      
@@ -511,7 +501,7 @@ int drawGLScene()
     printGLf(20, 4, 1, "keys 1qa,2ws, space pause, arrows sample time, time shift");
     glColor3f(1.0f, 1.0f, 0.0f);
 
-    printGLf(20,20,1,"scale 1 = 1/%d, 2 = 1/%d",lines[0].GetScale(),lines[1].GetScale());
+    printGLf(20,20,1,"scale 1 = 1/%d, 2 = 1/%d",lines.GetScale(0),lines.GetScale(1));
     printGLf(20,40,1,"Sample %0.3f secs offset %d" ,SampleRate/5000.0,SampleStart);
     printGLf(20,60,1,"%d %s ",buffcount,buff);
     if (scopePause) {
@@ -540,17 +530,17 @@ int drawGLScene()
       */
       drawGLLine(0, 270);
       {
-      unsigned int bt = lines[0].GetBaseTime(),mx = lines[0].GetMaxTime();
+      unsigned int bt = lines.GetBaseTime(),mx = lines.GetMaxTime();
       unsigned int tt = mx - bt; // total time
       
-      int top = lines[0].GetEnd();
+      int top = lines.GetEnd();
       if (top<SampleRate) top = SampleRate;
       DrawLine(20,300,400,300);
       if (tt>0)
       {
       for(int x=0;x<top;x++)
       {
-	int st = lines[0].GetTime(SampleStart,x);
+	int st = lines.GetTime(SampleStart+x);
 	GLint tx =  st - bt;
 	  tx = 20+tx;
 	 DrawLine(tx,290,tx,310);
@@ -746,19 +736,19 @@ void keyAction()
         keys[keyCodes[F1]] = False;
     }
     if (keys[keyCodes[A]]) {
-	lines[0].DecScale();
+	lines.DecScale(0);
         keys[keyCodes[A]] = False;
     }
     if (keys[keyCodes[Q]]) {
-	lines[0].IncScale();
+	lines.IncScale(0);
         keys[keyCodes[Q]] = False;
     }
     if (keys[keyCodes[W]]) {
-	lines[1].IncScale();
+	lines.IncScale(1);
         keys[keyCodes[W]] = False;
     }
     if (keys[keyCodes[S]]) {
-	lines[1].DecScale();
+	lines.DecScale(1);
         keys[keyCodes[S]] = False;
     }    
 }
@@ -851,8 +841,8 @@ int main(int argc, char **argv)
 //                    playSound(dieWave);
 #endif
                 
-            if (keys[keyCodes[ONE]]){ keys[keyCodes[ONE]] = false; lines[0].ToggleVisible(); }
-	    if (keys[keyCodes[TWO]]){ keys[keyCodes[TWO]] = false; lines[1].ToggleVisible(); }
+            if (keys[keyCodes[ONE]]){ keys[keyCodes[ONE]] = false; lines.ToggleVisible(0); }
+	    if (keys[keyCodes[TWO]]){ keys[keyCodes[TWO]] = false; lines.ToggleVisible(1); }
 	  
             if (keys[keyCodes[LEFT]]) {
 	        keys[keyCodes[LEFT]] = false;
