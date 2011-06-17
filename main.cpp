@@ -33,31 +33,31 @@ FILE *usb;
 #define CHANNELNUM 2
 class line
 {
-  int t[TRACELENGTH];
-  int v[CHANNELNUM][TRACELENGTH];
+  int timemark[TRACELENGTH];
+  int value[CHANNELNUM][TRACELENGTH];
   int end;
   bool visible[CHANNELNUM];
   int scale[CHANNELNUM];
 public:
   line() { for (int i=0; i< CHANNELNUM; i++) {visible[i] = true;  scale[i] = 1;}; end = 0; }
-  void AddSample(int* val) { t[end]=*val++; for (int i=0; i< CHANNELNUM; i++){ v[i][end] = *val++; }; end++; if (end==TRACELENGTH) end--;  }
-  int GetChSample(int start, int ch) const { if (start<0) start=0; if (start>=end) return 0; else return v[ch][start] / scale[ch]; }
-  int GetTime(int start) { return t[start]; }
+  void AddSample(int* val) { timemark[end]=*val++; for (int i=0; i< CHANNELNUM; i++){ value[i][end] = *val++; }; end++; if (end==TRACELENGTH) end--;  }
+  int GetChSample(int start, int ch) const { if (start<0) start=0; if (start>=end) return 0; else return value[ch][start] / scale[ch]; }
+  int GetTime(int start) { return timemark[start]; }
   void IncScale(int ch) { if (scale[ch]>1) scale[ch]--; }
   void DecScale(int ch) { if (scale[ch]<512) scale[ch]++; }
   bool IsVisible(int ch) const { return visible[ch]; }
   void ToggleVisible(int ch) { visible[ch] = !visible[ch]; }
   int GetScale(int ch) const { return scale[ch]; }
   void Reset() { end=0; }
-  int GetBaseTime() const { return t[0]; }
-  int GetMaxTime() const { if (end>0) return t[end-1]; else return t[0]; }
+  int GetBaseTime() const { return timemark[0]; }
+  int GetMaxTime() const { if (end>0) return timemark[end-1]; else return timemark[0]; }
   int GetEnd() const { return end; }
 };
 
 line lines;
 char buff[100]="";
 int buffcount=0;
-    
+bool help = false;	// shows help screen if true
 void UpdateSamples()
 {
       
@@ -67,12 +67,13 @@ static int lastf=0,lasts=0;
     if (!feof(usb))
     {
       fgets(buff,100,usb);
+	      // time channel1 channel2
       sscanf(buff,"%d %d %d",&input[0],&input[1],&input[2]);
       buffcount++;
     }
     else { s = lasts; f = lastf;}
       //printf("%s %d %d\n",buff,f,s);
-      lines.AddSample(input);
+      lines.AddSample(input);		//FIXME: since we are now getting the timemark as the first parameter we shouldn't add samples everytime, only when a newone is done
    char *ch = buff;
    while(*ch && (*ch!='\n') && (*ch!='\r'))
       ch++;
@@ -151,7 +152,7 @@ static int attrListDbl[] = { GLX_RGBA, GLX_DOUBLEBUFFER,
 };
 
 
-enum KEYS { ESCAPE=0,F1=1,A=2,UP=3,DOWN=4,LEFT=5,RIGHT=6,SPACE=7,ONE=8,TWO=9,Q=10,W=11,S=12 };
+enum KEYS { ESCAPE=0,F1=1,A=2,UP=3,DOWN=4,LEFT=5,RIGHT=6,SPACE=7,ONE=8,TWO=9,Q=10,W=11,S=12,HELP=13 };
 
 GLWindow GLWin;
 const char* title = "Quickie Arduino Scope";
@@ -493,12 +494,23 @@ int drawGLLine(int line, int yoffset)
 
 int drawGLScene()
 {
+  
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, 0.0f, -5.0f);
     glColor3f(1.0f, 0.5f, 1.0f);
-    
-    printGLf(20, 4, 1, "keys 1qa,2ws, space pause, arrows sample time, time shift");
+    if (help)
+    {
+      printGLf(20,4,1,"1 and 2 toggle channels 1 and 2");
+      printGLf(20,20,1,"q and a increases and decreases y scale for channel 1");
+      printGLf(20,40,1,"w and s increases and decreases y scale for channel 2");
+      printGLf(20,60,1,"space pauses");
+      printGLf(20,80,1,"left/right arrows shift the sample time frame");
+      printGLf(20,100,1,"up/down arrows change the sample rate");    
+      glXSwapBuffers(GLWin.dpy, GLWin.win);
+      return true;
+    }	
+    printGLf(20, 4, 1, "Press ? for help");
     glColor3f(1.0f, 1.0f, 0.0f);
 
     printGLf(20,20,1,"scale 1 = 1/%d, 2 = 1/%d",lines.GetScale(0),lines.GetScale(1));
@@ -591,9 +603,7 @@ GLvoid killGLWindow()
 }
 
 /* this function creates our window and sets it up properly */
-/* FIXME: bits is currently unused */
-Bool createGLWindow(const char *title, int width, int height, int bits,
-               Bool fullscreenflag)
+Bool createGLWindow(const char *title, int width, int height, Bool fullscreenflag)
 {
     XVisualInfo *vi;
     Colormap cmap;
@@ -723,6 +733,7 @@ void initKeys()
     keyCodes[SPACE] = XKeysymToKeycode(GLWin.dpy, XK_space);
     keyCodes[ONE] = XKeysymToKeycode(GLWin.dpy,XK_1);
     keyCodes[TWO] = XKeysymToKeycode(GLWin.dpy,XK_2);
+    keyCodes[HELP] = XKeysymToKeycode(GLWin.dpy,XK_question);
 }
 
 void keyAction()
@@ -732,7 +743,7 @@ void keyAction()
     if (keys[keyCodes[F1]]) {
         killGLWindow();
         GLWin.fs = !GLWin.fs;
-        createGLWindow(title, 640, 480, 24, GLWin.fs);
+        createGLWindow(title, 640, 480, GLWin.fs);
         keys[keyCodes[F1]] = False;
     }
     if (keys[keyCodes[A]]) {
@@ -750,26 +761,60 @@ void keyAction()
     if (keys[keyCodes[S]]) {
 	lines.DecScale(1);
         keys[keyCodes[S]] = False;
-    }    
+    }   
+    if (keys[keyCodes[HELP]]) {
+      help = !help;
+      keys[keyCodes[HELP]] = False;
+    }
 }
 
 int main(int argc, char **argv)
 {
     XEvent event;
     unsigned int start;
+    int width=640;
+    int height = 480;
     done = False;
-    usb = fopen("/dev/ttyUSB0","r");
+const char* dev = "/dev/ttyUSB0";
+  help = false;
+  argc--;
+  while(argc)
+  {
+    argv++;
+    if (strcmp(*argv,"-d")==0)
+    {
+      argv++;
+      argc--;
+      dev = *argv;
+    }
+    if ((strcmp(*argv,"-h")==0) || help)
+    {
+      printf("Usage is scope [-h] [-d dev] [-w W H]\nwhere: -h is help\n  -d assign device\n  -w Width height (eg -w 640 480)\n");
+      return 0;
+    }
+    if (strcmp(*argv,"-w")==0)
+    {
+      argv++;
+      argc--;
+      width = atoi(*argv++);
+      argc--;
+      height = atoi(*argv++);
+      argc--;
+      help |= (width==0 || height==0);
+    }
+  }
+    usb = fopen(dev,"r");
     buff[0] = '\0';
     if (usb==0)
     {
-      printf("could not open /dev/ttyUSB0");
+      printf("could not open %s",dev);
       return 1;
     }
     
     
     /* default to fullscreen */
     GLWin.fs = False;
-    createGLWindow(title, 640, 480, 24, GLWin.fs);
+    createGLWindow(title, width, height, GLWin.fs);
     initKeys();
 #ifdef WITH_SOUND
     dieWave = (waveFile *)malloc(sizeof(waveFile));
