@@ -5,9 +5,10 @@ project(scope)
 #target_link_libraries(main ${EXTRA_LIBS})
 
 #target_link_libraries(scope X11 GL GLU)
+set(EXTRA_LIBS line)
+add_library(line line.cpp)
 add_executable(scope main.cpp ${EXTRA_LIBS})
 include_directories(/usr/include/pulse)
-
 
 
 target_link_libraries(${PROJECT_NAME} X11 m pulse-simple GL GLU glut)
