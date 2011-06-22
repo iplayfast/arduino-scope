@@ -22,6 +22,8 @@
 #include <unistd.h>
 #include <simple.h>
 
+#include "line.h"
+
 #define RIFF 1179011410     /* little endian value for ASCII-encoded 'RIFF' */
 #define WAVE 1163280727     /* little endian value for ASCII-encoded 'WAVE' */
 #define FMT 544501094       /* little endian value for ASCII-encoded 'fmt' */
@@ -29,30 +31,6 @@
 
 FILE *usb;
 
-#define TRACELENGTH 10000
-#define CHANNELNUM 2
-class line
-{
-  int timemark[TRACELENGTH];
-  int value[CHANNELNUM][TRACELENGTH];
-  int end;
-  bool visible[CHANNELNUM];
-  int scale[CHANNELNUM];
-public:
-  line() { for (int i=0; i< CHANNELNUM; i++) {visible[i] = true;  scale[i] = 1;}; end = 0; }
-  void AddSample(int* val) { timemark[end]=*val++; for (int i=0; i< CHANNELNUM; i++){ value[i][end] = *val++; }; end++; if (end==TRACELENGTH) end--;  }
-  int GetChSample(int start, int ch) const { if (start<0) start=0; if (start>=end) return 0; else return value[ch][start] / scale[ch]; }
-  int GetTime(int start) { return timemark[start]; }
-  void IncScale(int ch) { if (scale[ch]>1) scale[ch]--; }
-  void DecScale(int ch) { if (scale[ch]<512) scale[ch]++; }
-  bool IsVisible(int ch) const { return visible[ch]; }
-  void ToggleVisible(int ch) { visible[ch] = !visible[ch]; }
-  int GetScale(int ch) const { return scale[ch]; }
-  void Reset() { end=0; }
-  int GetBaseTime() const { return timemark[0]; }
-  int GetMaxTime() const { if (end>0) return timemark[end-1]; else return timemark[0]; }
-  int GetEnd() const { return end; }
-};
 
 line lines;
 char buff[100]="";
