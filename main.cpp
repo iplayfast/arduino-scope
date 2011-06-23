@@ -1,6 +1,4 @@
 
-#define WITH_SOUND
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,18 +14,15 @@
 
 #ifdef WITH_SOUND
 /* includes needed for sound */
+#include "sound.h"
+#endif
+
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
-#include <sys/soundcard.h>
 #include <unistd.h>
-#include <simple.h>
 
 #include "line.h"
 
-#define RIFF 1179011410     /* little endian value for ASCII-encoded 'RIFF' */
-#define WAVE 1163280727     /* little endian value for ASCII-encoded 'WAVE' */
-#define FMT 544501094       /* little endian value for ASCII-encoded 'fmt' */
-#define DATA 1635017060     /* little endian value for ASCII-encoded 'data' */
 
 FILE *usb;
 
@@ -36,6 +31,7 @@ line lines;
 char buff[100]="";
 int buffcount=0;
 bool help = false;	// shows help screen if true
+
 void UpdateSamples()
 {
       
@@ -63,31 +59,6 @@ void ResetSamples()
 {
   lines.Reset();
 }
-
-typedef struct {
-    unsigned int chunkID;    /* ASCII: 'RIFF' */
-    unsigned int chunkSize;    /* filelength - 8 */
-    unsigned int format;    /* ASCII: 'WAVE' */
-
-    unsigned int subChunk1ID;   /* ASCII: 'fmt ' */
-    unsigned int subChunk1Size; /* length of sub chunk, 16 for PCM*/
-    unsigned short int audioFormat;     /* should be 1 for PCM */
-    unsigned short int numberOfChannels;    /* 1 Mono, 2 Stereo */
-    unsigned int sampleRate;    /* sample frequency */
-    unsigned int byteRate;  /* sampleRate * numberOfChannels * bitsPerSample/8 */
-
-    unsigned short int blockAlign;    /* numberOfChannels * bitsPerSample/8 */
-    unsigned short int bitsPerSample; /* 8, 16 bit */ 
-
-    unsigned int subChunk2ID;   /* ASCII: 'data' */
-    unsigned int subChunk2Size; /* size of the sample data */
-} waveHeader;
-
-typedef struct {
-    waveHeader* header;
-    unsigned char* sampleData;
-} waveFile;
-#endif
 
 /* stuff about our window grouped together */
 typedef struct {
@@ -249,86 +220,6 @@ int loadBmp(const char* filename, textureImage* texture)
     return 1;
 }
 
-#ifdef WITH_SOUND
-int loadWave(const char* filename, waveFile* waveFile)
-{
-    FILE* file;
-    /* allocate space for the wave header */
-    waveFile->header = (waveHeader *) malloc(sizeof(waveHeader));
-    /* make sure the file is there and open it read-only (binary) */
-    if ((file = fopen(filename, "rb")) == NULL) {
-        printf("File not found : %s\n", filename);
-        return 0;
-    }
-    /* read the wave header */
-    if (!fread(waveFile->header, sizeof(waveHeader), 1, file)) {
-        printf("Error reading file!\n");
-        return 0;
-    }
-    /* check if it is a riff wave file */
-    if (waveFile->header->chunkID != RIFF ||
-        waveFile->header->format != WAVE ||
-        waveFile->header->subChunk1ID != FMT ||
-        waveFile->header->subChunk2ID != DATA) {
-        printf("Soundfile %s not in wave format!\n", filename);
-        return 0;
-    }
-    /* we can only handle uncompressed, PCM encoded waves! */
-    if (waveFile->header->audioFormat != 1) {
-        printf("Soundfile not PCM encoded!\n");
-        return 0;
-    }
-    /* we can only handle up to two channels (stereo) */
-    if (waveFile->header->numberOfChannels > 2) {
-        printf("Soundfile has more than 2 channels!\n");
-        return 0;
-    }
-    waveFile->sampleData = (unsigned char *) malloc(waveFile->header->subChunk2Size);
-    fseek(file, sizeof(waveHeader), SEEK_SET);
-    if (!fread(waveFile->sampleData, waveFile->header->subChunk2Size, 1,
-        file)) {
-        printf("Error loading file!\n");
-        return 0;
-    }
-    return 1;
-}
-pa_simple *s;
-void playSound(waveFile* sound) {
-  int error;
- pa_simple_write (s,
-		sound->sampleData,
-		sound->header->subChunk2Size,
-		&error);
-}
-void killsound()
-{
-   pa_simple_free(s);
-}
-//	printf("%d %d\n",x,70 + lines[0].GetSample(x));
-
-int initSound(int bitsPerSample, int numberOfChannels, int samplingRate)
-{
- pa_sample_spec ss;
-
- ss.format = PA_SAMPLE_S16NE;
- ss.channels = 2;
- ss.rate = 44100;
-
- s = pa_simple_new(NULL,               // Use the default server.
-                   "Fooapp",           // Our application's name.
-                   PA_STREAM_PLAYBACK,
-                   NULL,               // Use the default device.
-                   "Music",            // Description of our stream.
-                   &ss,                // Our sample format.
-                   NULL,               // Use default channel map
-                   NULL,               // Use default buffering attributes.
-                   NULL               // Ignore error code.
-                   );
-
-  
-    return 0;
-}
-#endif
 
 /* Load Bitmaps And Convert To Textures */
 Bool loadGLTextures()
