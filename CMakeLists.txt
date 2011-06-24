@@ -5,7 +5,7 @@ project(scope)
 #target_link_libraries(main ${EXTRA_LIBS})
 
 #target_link_libraries(scope X11 GL GLU)
-add_executable(scope main.cpp ${EXTRA_LIBS})
+add_executable(scope main.cpp TFuzzy.c ${EXTRA_LIBS})
 include_directories(/usr/include/pulse)
 
 

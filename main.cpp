@@ -14,7 +14,8 @@
 #include <math.h>
 #include <sys/timeb.h>
 #include "TFuzzy.h"
-
+using namespace Crystal;
+using namespace Fuzzy;
 #ifdef WITH_SOUND
 /* includes needed for sound */
 #include <sys/ioctl.h>
@@ -29,6 +30,8 @@
 #define DATA 1635017060     /* little endian value for ASCII-encoded 'data' */
 
 FILE *usb;
+int width=640;
+int height = 480;
 
 #define TRACELENGTH 10000
 #define CHANNELNUM 2
@@ -39,9 +42,23 @@ class line
   int end;
   bool visible[CHANNELNUM];
   int scale[CHANNELNUM];
+  ClassFuzzy channel[CHANNELNUM];
 public:
   line() { for (int i=0; i< CHANNELNUM; i++) {visible[i] = true;  scale[i] = 1;}; end = 0; }
-  void AddSample(int* val) { timemark[end]=*val++; for (int i=0; i< CHANNELNUM; i++){ value[i][end] = *val++; }; end++; if (end==TRACELENGTH) end--;  }
+  int GetY(int ch,int time) { return channel[ch].Value(time); } 
+  void AddSample(int* val) 
+  { 
+    channel[0].TFuzzyAdd(val[0]-timemark[0],val[1]);
+    channel[1].TFuzzyAdd(val[0]-timemark[0],val[2]);
+    timemark[end]=*val++; 
+    for (int i=0; i< CHANNELNUM; i++)
+    { 
+      value[i][end] = *val++; 
+      
+    }; 
+    end++; 
+    if (end==TRACELENGTH) end--;
+  }
   int GetChSample(int start, int ch) const { if (start<0) start=0; if (start>=end) return 0; else return value[ch][start] / scale[ch]; }
   int GetTime(int start) { return timemark[start]; }
   void IncScale(int ch) { if (scale[ch]>1) scale[ch]--; }
@@ -49,7 +66,7 @@ public:
   bool IsVisible(int ch) const { return visible[ch]; }
   void ToggleVisible(int ch) { visible[ch] = !visible[ch]; }
   int GetScale(int ch) const { return scale[ch]; }
-  void Reset() { end=0; }
+  void Reset() { end=0; channel[0].Clear(); channel[1].Clear(); }
   int GetBaseTime() const { return timemark[0]; }
   int GetMaxTime() const { if (end>0) return timemark[end-1]; else return timemark[0]; }
   int GetEnd() const { return end; }
@@ -493,7 +510,7 @@ int drawGLLine(int line, int yoffset)
   
 }
 
-int drawGLScene()
+int DrawScreen()
 {
   
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -548,7 +565,7 @@ int drawGLScene()
       
       int top = lines.GetEnd();
       if (top<SampleRate) top = SampleRate;
-      DrawLine(20,300,400,300);
+      DrawLine(0,height / 2,width,height / 2);
       if (tt>0)
       {
       for(int x=0;x<top;x++)
@@ -773,8 +790,6 @@ int main(int argc, char **argv)
 {
     XEvent event;
     unsigned int start;
-    int width=640;
-    int height = 480;
     done = False;
 const char* dev = "/dev/ttyUSB0";
   help = false;
@@ -843,7 +858,7 @@ const char* dev = "/dev/ttyUSB0";
                 case Expose:
                     if (event.xexpose.count != 0)
                         break;
-                    drawGLScene();
+                    DrawScreen();
                     break;
                 case ConfigureNotify:
                 /* call resizeGLScene only if our window-size changed */
@@ -879,7 +894,7 @@ const char* dev = "/dev/ttyUSB0";
             }
         }
         start = getMilliSeconds();
-        drawGLScene();
+        DrawScreen();
         keyAction();
         {
 #ifdef WITH_SOUND
