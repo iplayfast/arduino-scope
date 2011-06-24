@@ -13,6 +13,7 @@
 #include <X11/keysym.h>
 #include <math.h>
 #include <sys/timeb.h>
+#include "TFuzzy.h"
 
 #ifdef WITH_SOUND
 /* includes needed for sound */
