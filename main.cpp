@@ -654,6 +654,7 @@ const char* dev = "/dev/ttyUSB0";
     {
       argv++;
       argc--;
+      argc--; // needed since -d has a parameter!!!
       dev = *argv;
     }
     if ((strcmp(*argv,"-h")==0) || help)
