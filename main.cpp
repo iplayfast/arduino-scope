@@ -25,7 +25,8 @@
 
 
 FILE *usb;
-
+int width=640;
+int height = 480;
 
 line lines;
 char buff[100]="";
@@ -34,30 +35,33 @@ bool help = false;	// shows help screen if true
 
 void UpdateSamples()
 {
-      
-      int t,f,s;
-      int input[CHANNELNUM+1];
-static int lastf=0,lasts=0;
+
+    int t,f,s;
+    int input[CHANNELNUM+1];
+    static int lastf=0,lasts=0;
     if (!feof(usb))
     {
-      fgets(buff,100,usb);
-	      // time channel1 channel2
-      sscanf(buff,"%d %d %d",&input[0],&input[1],&input[2]);
-      buffcount++;
+        fgets(buff,100,usb);
+        // time channel1 channel2
+        sscanf(buff,"%d %d %d",&input[0],&input[1],&input[2]);
+        buffcount++;
     }
-    else { s = lasts; f = lastf;}
-      //printf("%s %d %d\n",buff,f,s);
-      lines.AddSample(input);		//FIXME: since we are now getting the timemark as the first parameter we shouldn't add samples everytime, only when a newone is done
-   char *ch = buff;
-   while(*ch && (*ch!='\n') && (*ch!='\r'))
-      ch++;
-   if ((*ch=='\r')|| (*ch=='\n'))
-      *ch = '\0';
+    else {
+        s = lasts;
+        f = lastf;
+    }
+    //printf("%s %d %d\n",buff,f,s);
+    lines.AddSample(input);		//FIXME: since we are now getting the timemark as the first parameter we shouldn't add samples everytime, only when a newone is done
+    char *ch = buff;
+    while (*ch && (*ch!='\n') && (*ch!='\r'))
+        ch++;
+    if ((*ch=='\r')|| (*ch=='\n'))
+        *ch = '\0';
 
 }
 void ResetSamples()
 {
-  lines.Reset();
+    lines.Reset();
 }
 
 /* stuff about our window grouped together */
@@ -84,21 +88,21 @@ typedef struct {
 /* attributes for a single buffered visual in RGBA format with at least
  * 4 bits per color and a 16 bit depth buffer */
 static int attrListSgl[] = { GLX_RGBA, GLX_RED_SIZE, 4,
-    GLX_GREEN_SIZE, 4,
-    GLX_BLUE_SIZE, 4,
-    GLX_DEPTH_SIZE, 16,
-    None
-};
+                             GLX_GREEN_SIZE, 4,
+                             GLX_BLUE_SIZE, 4,
+                             GLX_DEPTH_SIZE, 16,
+                             None
+                           };
 
 /* attributes for a double buffered visual in RGBA format with at least
  * 4 bits per color and a 16 bit depth buffer */
 static int attrListDbl[] = { GLX_RGBA, GLX_DOUBLEBUFFER,
-    GLX_RED_SIZE, 4,
-    GLX_GREEN_SIZE, 4,
-    GLX_BLUE_SIZE, 4,
-    GLX_DEPTH_SIZE, 16,
-    None
-};
+                             GLX_RED_SIZE, 4,
+                             GLX_GREEN_SIZE, 4,
+                             GLX_BLUE_SIZE, 4,
+                             GLX_DEPTH_SIZE, 16,
+                             None
+                           };
 
 
 enum KEYS { ESCAPE=0,F1=1,A=2,UP=3,DOWN=4,LEFT=5,RIGHT=6,SPACE=7,ONE=8,TWO=9,Q=10,W=11,S=12,HELP=13 };
@@ -230,18 +234,18 @@ Bool loadGLTextures()
     status = False;
     texti = (textureImage*) malloc(sizeof(textureImage) * 2);
     if (loadBmp("Data/font.bmp", &texti[0]) &&
-        loadBmp("Data/image.bmp", &texti[1])) {
+            loadBmp("Data/image.bmp", &texti[1])) {
         status = True;
         glGenTextures(2, &texture[0]);	/* create two textures */
-            for (loop1 = 0; loop1 < 2; loop1++) {
+        for (loop1 = 0; loop1 < 2; loop1++) {
             glBindTexture(GL_TEXTURE_2D, texture[loop1]);
             /* use linear filtering */
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             /* actually generate the texture */
             glTexImage2D(GL_TEXTURE_2D, 0, 3, texti[loop1].width,
-                    texti[loop1].height, 0, GL_RGB,
-                    GL_UNSIGNED_BYTE, texti[loop1].data);
+                         texti[loop1].height, 0, GL_RGB,
+                         GL_UNSIGNED_BYTE, texti[loop1].data);
         }
     }
     /* free the ram we used in our texture generation process */
@@ -264,17 +268,17 @@ void buildFont(void) {
         cx = (float) (loop1 % 16) / 16.0f;
         cy = (float) (loop1 / 16) / 16.0f;
         glNewList(base + loop1, GL_COMPILE);
-            glBegin(GL_QUADS);
-                glTexCoord2f(cx, 1 - cy - 0.0625f);
-                glVertex2i(0, 16);
-                glTexCoord2f(cx + 0.0625f, 1 - cy - 0.0625f);
-                glVertex2i(16, 16);
-                glTexCoord2f(cx + 0.0625f, 1 - cy);
-                glVertex2i(16, 0);
-                glTexCoord2f(cx, 1 - cy);
-                glVertex2i(0, 0);
-            glEnd();
-            glTranslated(15, 0, 0);
+        glBegin(GL_QUADS);
+        glTexCoord2f(cx, 1 - cy - 0.0625f);
+        glVertex2i(0, 16);
+        glTexCoord2f(cx + 0.0625f, 1 - cy - 0.0625f);
+        glVertex2i(16, 16);
+        glTexCoord2f(cx + 0.0625f, 1 - cy);
+        glVertex2i(16, 0);
+        glTexCoord2f(cx, 1 - cy);
+        glVertex2i(0, 0);
+        glEnd();
+        glTranslated(15, 0, 0);
         glEndList();
     }
 }
@@ -336,49 +340,50 @@ int initGL()
 }
 void DrawLine(GLint x1,GLint y1,GLint x2,GLint y2)
 {
-  glBegin(GL_LINES);
-  glVertex2d(x1,y1); glVertex2d(x2,y2);
-  glEnd();
+    glBegin(GL_LINES);
+    glVertex2d(x1,y1);
+    glVertex2d(x2,y2);
+    glEnd();
 }
 /* Here goes our drawing code */
 
-int drawGLLine(int line, int yoffset) 
+int drawGLLine(int line, int yoffset)
 {
-      if (lines.IsVisible(line))
-      {
-	glBegin(GL_LINES);
-	if (line == 0) glColor3f(1.0f, 1.0f, 0.0f);
-	else glColor3ub(0,255,0);
-	int top = lines.GetEnd();
-	if (top<SampleRate)top=SampleRate;
-	for(int x=0;x<top;x++)
-	{
-		glVertex2d(20+(int)((400.0*x)/top),yoffset - lines.GetChSample(SampleStart+x, line));
-	}
-	glEnd();
-      }      
+    if (lines.IsVisible(line))
+    {
+        glBegin(GL_LINES);
+        if (line == 0) glColor3f(1.0f, 1.0f, 0.0f);
+        else glColor3ub(0,255,0);
+        int top = lines.GetEnd();
+        if (top<SampleRate)top=SampleRate;
+        for (int x=0;x<top;x++)
+        {
+            glVertex2d(20+(int)((400.0*x)/top),yoffset - lines.GetChSample(SampleStart+x, line));
+        }
+        glEnd();
+    }
 
-  
+
 }
 
-int drawGLScene()
+int DrawScreen()
 {
-  
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, 0.0f, -5.0f);
     glColor3f(1.0f, 0.5f, 1.0f);
     if (help)
     {
-      printGLf(20,4,1,"1 and 2 toggle channels 1 and 2");
-      printGLf(20,20,1,"q and a increases and decreases y scale for channel 1");
-      printGLf(20,40,1,"w and s increases and decreases y scale for channel 2");
-      printGLf(20,60,1,"space pauses");
-      printGLf(20,80,1,"left/right arrows shift the sample time frame");
-      printGLf(20,100,1,"up/down arrows change the sample rate");    
-      glXSwapBuffers(GLWin.dpy, GLWin.win);
-      return true;
-    }	
+        printGLf(20,4,1,"1 and 2 toggle channels 1 and 2");
+        printGLf(20,20,1,"q and a increases and decreases y scale for channel 1");
+        printGLf(20,40,1,"w and s increases and decreases y scale for channel 2");
+        printGLf(20,60,1,"space pauses");
+        printGLf(20,80,1,"left/right arrows shift the sample time frame");
+        printGLf(20,100,1,"up/down arrows change the sample rate");
+        glXSwapBuffers(GLWin.dpy, GLWin.win);
+        return true;
+    }
     printGLf(20, 4, 1, "Press ? for help");
     glColor3f(1.0f, 1.0f, 0.0f);
 
@@ -403,34 +408,34 @@ int drawGLScene()
       glColor3f(1.0f, 1.0f, 0.0f);
       for(int x=0;x<top;x++)
       {
-	glVertex2d(20+(int)((400.0*x)/top),270 - lines[0].GetSample(SampleStart,x));
-//	printf("%d %d\n",x,70 + lines[0].GetSample(x));
+    glVertex2d(20+(int)((400.0*x)/top),270 - lines[0].GetSample(SampleStart,x));
+    //    printf("%d %d\n",x,70 + lines[0].GetSample(x));
       }
       glEnd();
       }
       */
-      drawGLLine(0, 270);
-      {
-      unsigned int bt = lines.GetBaseTime(),mx = lines.GetMaxTime();
-      unsigned int tt = mx - bt; // total time
-      
-      int top = lines.GetEnd();
-      if (top<SampleRate) top = SampleRate;
-      DrawLine(20,300,400,300);
-      if (tt>0)
-      {
-      for(int x=0;x<top;x++)
-      {
-	int st = lines.GetTime(SampleStart+x);
-	GLint tx =  st - bt;
-	  tx = 20+tx;
-	 DrawLine(tx,290,tx,310);
-      
-      }
-      drawGLLine(1, 470);
-      }      
+    drawGLLine(0, 270);
+    {
+        unsigned int bt = lines.GetBaseTime(),mx = lines.GetMaxTime();
+        unsigned int tt = mx - bt; // total time
+
+        int top = lines.GetEnd();
+        if (top<SampleRate) top = SampleRate;
+        DrawLine(0,height / 2,width,height / 2);
+        if (tt>0)
+        {
+            for (int x=0;x<top;x++)
+            {
+                int st = lines.GetTime(SampleStart+x);
+                GLint tx =  st - bt;
+                tx = 20+tx;
+                DrawLine(tx,290,tx,310);
+
+            }
+            drawGLLine(1, 470);
+        }
     }
-   
+
     glLineWidth(1.0f);
     if (antiAliasing)
         glEnable(GL_LINE_SMOOTH);
@@ -442,7 +447,7 @@ int drawGLScene()
     fps = frames / sec;
     if (!scopePause)
     {
-      UpdateSamples();
+        UpdateSamples();
     }
     if (t - t0 >= 5000) {
         printf("%g FPS\n", fps);
@@ -456,11 +461,11 @@ int drawGLScene()
 GLvoid killGLWindow()
 {
     if (GLWin.ctx) {
-    if (!glXMakeCurrent(GLWin.dpy, None, NULL)) {
-        printf("Could not release drawing context.\n");
-    }
-    glXDestroyContext(GLWin.dpy, GLWin.ctx);
-    GLWin.ctx = NULL;
+        if (!glXMakeCurrent(GLWin.dpy, None, NULL)) {
+            printf("Could not release drawing context.\n");
+        }
+        glXDestroyContext(GLWin.dpy, GLWin.ctx);
+        GLWin.ctx = NULL;
     }
     /* switch back to original desktop resolution if we were in fs */
     if (GLWin.fs) {
@@ -494,9 +499,9 @@ Bool createGLWindow(const char *title, int width, int height, Bool fullscreenfla
     GLWin.dpy = XOpenDisplay(0);
     GLWin.screen = DefaultScreen(GLWin.dpy);
     XF86VidModeQueryVersion(GLWin.dpy, &vidModeMajorVersion,
-            &vidModeMinorVersion);
+                            &vidModeMinorVersion);
     printf("XF86VidModeExtension-Version %d.%d\n", vidModeMajorVersion,
-       vidModeMinorVersion);
+           vidModeMinorVersion);
     XF86VidModeGetAllModeLines(GLWin.dpy, GLWin.screen, &modeNum, &modes);
     /* save desktop-resolution before switching modes */
     GLWin.deskMode = *modes[0];
@@ -521,7 +526,7 @@ Bool createGLWindow(const char *title, int width, int height, Bool fullscreenfla
     GLWin.ctx = glXCreateContext(GLWin.dpy, vi, 0, GL_TRUE);
     /* create a color map */
     cmap = XCreateColormap(GLWin.dpy, RootWindow(GLWin.dpy, vi->screen),
-               vi->visual, AllocNone);
+                           vi->visual, AllocNone);
     GLWin.attr.colormap = cmap;
     GLWin.attr.border_pixel = 0;
 
@@ -538,31 +543,31 @@ Bool createGLWindow(const char *title, int width, int height, Bool fullscreenfla
         GLWin.attr.event_mask = ExposureMask | KeyPressMask | ButtonPressMask |
                                 KeyReleaseMask | StructureNotifyMask;
         GLWin.win = XCreateWindow(GLWin.dpy, RootWindow(GLWin.dpy, vi->screen),
-                    0, 0, dpyWidth, dpyHeight, 0, vi->depth, InputOutput,
-                    vi->visual, CWBorderPixel | CWColormap |
-                    CWEventMask | CWOverrideRedirect, &GLWin.attr);
+                                  0, 0, dpyWidth, dpyHeight, 0, vi->depth, InputOutput,
+                                  vi->visual, CWBorderPixel | CWColormap |
+                                  CWEventMask | CWOverrideRedirect, &GLWin.attr);
         XWarpPointer(GLWin.dpy, None, GLWin.win, 0, 0, 0, 0, 0, 0);
         XMapRaised(GLWin.dpy, GLWin.win);
         XGrabKeyboard(GLWin.dpy, GLWin.win, True, GrabModeAsync,
-              GrabModeAsync, CurrentTime);
+                      GrabModeAsync, CurrentTime);
         XGrabPointer(GLWin.dpy, GLWin.win, True, ButtonPressMask,
-             GrabModeAsync, GrabModeAsync, GLWin.win, None,
-             CurrentTime);
+                     GrabModeAsync, GrabModeAsync, GLWin.win, None,
+                     CurrentTime);
     } else {
         /* create a window in window mode */
         GLWin.attr.event_mask = ExposureMask | KeyPressMask | ButtonPressMask |
                                 KeyReleaseMask | StructureNotifyMask;
         GLWin.win = XCreateWindow(GLWin.dpy,
-                    RootWindow(GLWin.dpy, vi->screen), 0,
-                    0, width, height, 0, vi->depth,
-                    InputOutput, vi->visual,
-                    CWBorderPixel | CWColormap | CWEventMask,
-                    &GLWin.attr);
+                                  RootWindow(GLWin.dpy, vi->screen), 0,
+                                  0, width, height, 0, vi->depth,
+                                  InputOutput, vi->visual,
+                                  CWBorderPixel | CWColormap | CWEventMask,
+                                  &GLWin.attr);
         /* only set window title and handle wm_delete_events if in windowed mode */
         wmDelete = XInternAtom(GLWin.dpy, "WM_DELETE_WINDOW", True);
         XSetWMProtocols(GLWin.dpy, GLWin.win, &wmDelete, 1);
         XSetStandardProperties(GLWin.dpy, GLWin.win, title,
-                   title, None, NULL, 0, NULL);
+                               title, None, NULL, 0, NULL);
         XMapRaised(GLWin.dpy, GLWin.win);
     }
     /* connect the glx-context to the window */
@@ -616,76 +621,29 @@ void keyAction()
         keys[keyCodes[F1]] = False;
     }
     if (keys[keyCodes[A]]) {
-	lines.DecScale(0);
+        lines.DecScale(0);
         keys[keyCodes[A]] = False;
     }
     if (keys[keyCodes[Q]]) {
-	lines.IncScale(0);
+        lines.IncScale(0);
         keys[keyCodes[Q]] = False;
     }
     if (keys[keyCodes[W]]) {
-	lines.IncScale(1);
+        lines.IncScale(1);
         keys[keyCodes[W]] = False;
     }
     if (keys[keyCodes[S]]) {
-	lines.DecScale(1);
+        lines.DecScale(1);
         keys[keyCodes[S]] = False;
-    }   
+    }
     if (keys[keyCodes[HELP]]) {
-      help = !help;
-      keys[keyCodes[HELP]] = False;
+        help = !help;
+        keys[keyCodes[HELP]] = False;
     }
 }
 
-int main(int argc, char **argv)
+void initSound()
 {
-    XEvent event;
-    unsigned int start;
-    int width=640;
-    int height = 480;
-    done = False;
-const char* dev = "/dev/ttyUSB0";
-  help = false;
-  argc--;
-  while(argc)
-  {
-    argv++;
-    if (strcmp(*argv,"-d")==0)
-    {
-      argv++;
-      argc--;
-      argc--; // needed since -d has a parameter!!!
-      dev = *argv;
-    }
-    if ((strcmp(*argv,"-h")==0) || help)
-    {
-      printf("Usage is scope [-h] [-d dev] [-w W H]\nwhere: -h is help\n  -d assign device\n  -w Width height (eg -w 640 480)\n");
-      return 0;
-    }
-    if (strcmp(*argv,"-w")==0)
-    {
-      argv++;
-      argc--;
-      width = atoi(*argv++);
-      argc--;
-      height = atoi(*argv++);
-      argc--;
-      help |= (width==0 || height==0);
-    }
-  }
-    usb = fopen(dev,"r");
-    buff[0] = '\0';
-    if (usb==0)
-    {
-      printf("could not open %s",dev);
-      return 1;
-    }
-    
-    
-    /* default to fullscreen */
-    GLWin.fs = False;
-    createGLWindow(title, width, height, GLWin.fs);
-    initKeys();
 #ifdef WITH_SOUND
     dieWave = (waveFile *)malloc(sizeof(waveFile));
     loadWave("Data/die.wav", dieWave);
@@ -697,9 +655,68 @@ const char* dev = "/dev/ttyUSB0";
     loadWave("Data/hourglass.wav", hourglassWave);
     /* we setup the sound device according to the format of our wave-file */
     initSound(dieWave->header->bitsPerSample,
-        dieWave->header->numberOfChannels,
-        dieWave->header->sampleRate);
+              dieWave->header->numberOfChannels,
+              dieWave->header->sampleRate);
 #endif
+}
+
+const char *initArgs(int argc,char **argv)
+{
+    const char* dev = "/dev/ttyUSB0";
+    help = false;
+    argc--;
+    while (argc ||help)
+    {
+        argv++;
+        if ((argc && strcmp(*argv,"-h")==0) || help)
+        {
+            printf("Usage is scope [-h] [-d dev] [-w W H]\nwhere: -h is help\n  -d assign device\n  -w Width height (eg -w 640 480)\n");
+            return 0;
+        }
+        if (argc && strcmp(*argv,"-d")==0)
+        {
+            argv++;
+            argc--;
+	    argc--;
+            dev = *argv++;
+        }
+
+        if (argc && strcmp(*argv,"-w")==0)
+        {
+            argv++;
+            argc--;
+            width = atoi(*argv++);
+            argc--;
+            height = atoi(*argv++);
+            argc--;
+            help |= (width==0 || height==0);
+        }
+    }
+    return dev;
+}
+
+int main(int argc, char **argv)
+{
+    XEvent event;
+    unsigned int start;
+    done = False;
+    {
+        const char *dev = initArgs(argc,argv);
+        usb = fopen(dev,"r");
+        buff[0] = '\0';
+        if (usb==0)
+        {
+            printf("could not open %s",dev);
+            return 1;
+        }
+    }
+
+    /* default to fullscreen */
+    GLWin.fs = False;
+    createGLWindow(title, width, height, GLWin.fs);
+    initKeys();
+    initSound();
+
     antiAliasing = True;
     scopePause = False;
     t0 = getMilliSeconds();
@@ -709,83 +726,89 @@ const char* dev = "/dev/ttyUSB0";
         while (XPending(GLWin.dpy) > 0) {
             XNextEvent(GLWin.dpy, &event);
             switch (event.type) {
-                case Expose:
-                    if (event.xexpose.count != 0)
-                        break;
-                    drawGLScene();
+            case Expose:
+                if (event.xexpose.count != 0)
                     break;
-                case ConfigureNotify:
+                DrawScreen();
+                break;
+            case ConfigureNotify:
                 /* call resizeGLScene only if our window-size changed */
-                    if ((event.xconfigure.width != GLWin.width) ||
+                if ((event.xconfigure.width != GLWin.width) ||
                         (event.xconfigure.height != GLWin.height)) {
-                        GLWin.width = event.xconfigure.width;
-                        GLWin.height = event.xconfigure.height;
-                        printf("Resize event\n");
-                        resizeGLScene(event.xconfigure.width,
-                                      event.xconfigure.height);
-                    }
-                    break;
+                    GLWin.width = event.xconfigure.width;
+                    GLWin.height = event.xconfigure.height;
+                    printf("Resize event\n");
+                    resizeGLScene(event.xconfigure.width,
+                                  event.xconfigure.height);
+                }
+                break;
                 /* exit in case of a mouse button press */
-                case ButtonPress:
-                  //  done = True;
-                    break;
-                case KeyPress:
-                    keys[event.xkey.keycode] = True;
-                    break;
-                case KeyRelease:
-                    keys[event.xkey.keycode] = False;
-                    break;
-                case ClientMessage:
-                    if (*XGetAtomName(GLWin.dpy,
-                        event.xclient.message_type) ==
+            case ButtonPress:
+                //  done = True;
+                break;
+            case KeyPress:
+                keys[event.xkey.keycode] = True;
+                break;
+            case KeyRelease:
+                keys[event.xkey.keycode] = False;
+                break;
+            case ClientMessage:
+                if (*XGetAtomName(GLWin.dpy,
+                                  event.xclient.message_type) ==
                         *"WM_PROTOCOLS") {
-                        printf("Exiting sanely...\n");
-                        done = True;
-                    }
-                    break;
-                default:
-                    break;
+                    printf("Exiting sanely...\n");
+                    done = True;
+                }
+                break;
+            default:
+                break;
             }
         }
         start = getMilliSeconds();
-        drawGLScene();
+        DrawScreen();
         keyAction();
         {
 #ifdef WITH_SOUND
-                    /* play die sound */
+            /* play die sound */
 //                    playSound(dieWave);
 #endif
-                
-            if (keys[keyCodes[ONE]]){ keys[keyCodes[ONE]] = false; lines.ToggleVisible(0); }
-	    if (keys[keyCodes[TWO]]){ keys[keyCodes[TWO]] = false; lines.ToggleVisible(1); }
-	  
+
+            if (keys[keyCodes[ONE]]) {
+                keys[keyCodes[ONE]] = false;
+                lines.ToggleVisible(0);
+            }
+            if (keys[keyCodes[TWO]]) {
+                keys[keyCodes[TWO]] = false;
+                lines.ToggleVisible(1);
+            }
+
             if (keys[keyCodes[LEFT]]) {
-	        keys[keyCodes[LEFT]] = false;
-		SampleStart-=100;
-		if (SampleStart<0)SampleStart=0;
+                keys[keyCodes[LEFT]] = false;
+                SampleStart-=100;
+                if (SampleStart<0)SampleStart=0;
             }
             if (keys[keyCodes[RIGHT]]) {
-		keys[keyCodes[RIGHT]] = false;
-		SampleStart+=100;
-		if (SampleStart>TRACELENGTH) SampleStart = TRACELENGTH;
+                keys[keyCodes[RIGHT]] = false;
+                SampleStart+=100;
+                if (SampleStart>TRACELENGTH) SampleStart = TRACELENGTH;
             }
-	  
+
             if (keys[keyCodes[UP]]) {
-	        keys[keyCodes[UP]] = false;
-		SampleRate+=10;
+                keys[keyCodes[UP]] = false;
+                SampleRate+=10;
             }
             if (keys[keyCodes[DOWN]]) {
-		keys[keyCodes[DOWN]] = false;
-		if (SampleRate>10)
-		SampleRate-=10;
-		
-              
+                keys[keyCodes[DOWN]] = false;
+                if (SampleRate>10)
+                    SampleRate-=10;
+
+
             }
-	    if (keys[keyCodes[SPACE]])
-	    {
-		keys[keyCodes[SPACE]] = false;
-		scopePause = !scopePause;
-	    }
+            if (keys[keyCodes[SPACE]])
+            {
+                keys[keyCodes[SPACE]] = false;
+                scopePause = !scopePause;
+            }
         }
     }
 #ifdef WITH_SOUND
