@@ -16,6 +16,7 @@ class line
 public:
   line();
   void AddSample(int* val);
+  void AddSample(int time, int channel, int value);
   int GetChSample(int start, int ch) const;
   int GetTime(int start);
   void IncScale(int ch);
