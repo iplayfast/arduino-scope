@@ -6,10 +6,7 @@ ADD_DEFINITIONS (-D WITH_SOUND)
 #target_link_libraries(main ${EXTRA_LIBS})
 
 #target_link_libraries(scope X11 GL GLU)
-set(EXTRA_LIBS line sound)
-add_library(line line.cpp)
-add_library(sound sound.cpp)
-add_executable(scope main.cpp TFuzzy.c  ${EXTRA_LIBS})
+add_executable(scope main.cpp line.cpp sound.cpp TFuzzy.c display.cpp ${EXTRA_LIBS})
 include_directories(/usr/include/pulse)
 
 
