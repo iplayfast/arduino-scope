@@ -23,6 +23,12 @@ void line::AddSample(int* val) {
     end++;
     if (end==TRACELENGTH) end--;
 }
+
+void line::AddSample(int time, int channel, int value){
+  
+};
+
+
 int line::GetChSample(int start, int ch) const {
     if (start<0) start=0;
     if (start>=end) return 0;
@@ -59,4 +65,5 @@ int line::GetMaxTime() const {
 int line::GetEnd() const {
     return end;
 }
+
 

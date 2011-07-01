@@ -250,6 +250,7 @@ void initSound()
               dieWave->header->sampleRate);
 #endif
 }
+
 const char *initArgs(int argc,char **argv)
 {
     const char* dev = "/dev/ttyUSB0";
@@ -258,19 +259,20 @@ const char *initArgs(int argc,char **argv)
     while (argc ||help)
     {
         argv++;
-        if ((strcmp(*argv,"-h")==0) || help)
+        if ((argc && strcmp(*argv,"-h")==0) || help)
         {
             printf("Usage is scope [-h] [-d dev] [-w W H]\nwhere: -h is help\n  -d assign device\n  -w Width height (eg -w 640 480)\n");
             return 0;
         }
-        if (strcmp(*argv,"-d")==0)
+        if (argc && strcmp(*argv,"-d")==0)
         {
             argv++;
             argc--;
+	    argc--;
             dev = *argv++;
         }
 
-        if (strcmp(*argv,"-w")==0)
+        if (argc && strcmp(*argv,"-w")==0)
         {
             argv++;
             argc--;
