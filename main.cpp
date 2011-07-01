@@ -253,7 +253,7 @@ void initSound()
 
 const char *initArgs(int argc,char **argv)
 {
-    const char* dev = "/dev/ttyUSB0";
+    const char* dev = "/dev/stdin";
     help = false;
     argc--;
     while (argc ||help)
