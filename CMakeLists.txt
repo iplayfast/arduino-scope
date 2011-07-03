@@ -9,10 +9,7 @@ ADD_DEFINITIONS (-D WITH_SOUND)
 set(EXTRA_SOURCES line.cpp sound.cpp TFuzzy.c display.cpp)
 
 add_executable(scope main.cpp ${EXTRA_SOURCES} ${EXTRA_LIBS})
-<<<<<<< HEAD
 add_executable(data data.cpp)
-=======
->>>>>>> 81e4603a7fb3a30b17d7a93b4042d0c2dabc224e
 
 include_directories(/usr/include/pulse)
 
