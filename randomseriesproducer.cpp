@@ -34,7 +34,7 @@ RandomSeriesProducer::RandomSeriesProducer()
 
 }
 
-RandomSeriesProducer::RandomSeriesProducer(const int min_value, const int max_value, char *file_name, line *series_storage, int num_channels, const int *channels)
+RandomSeriesProducer::RandomSeriesProducer(const int min_value, const int max_value, line *series_storage, int num_channels, const int *channels)
 {
     setSeriesInfo(series_storage, num_channels, channels);
     min = min_value;

@@ -14,7 +14,8 @@
 #include <unistd.h>
 
 #include "line.h"
-
+#include "randomseriesproducer.h"
+#include "fileseriesproducer.h"
 
 FILE *usb;
 int width=640;
@@ -24,7 +25,8 @@ line lines;
 char buff[100]="";
 int buffcount=0;
 bool help = false;	// shows help screen if true
-
+bool Visible[2];		// TODO needs to be moved into a display class
+SeriesProducer *Producer;
 void UpdateSamples()
 {
 
@@ -98,12 +100,12 @@ unsigned int getMilliSeconds()
 
 int drawGLLine(int line, int yoffset)
 {
-    if (lines.IsVisible(line))
+    if (Visible[line])
     {
         glBegin(GL_LINES);
         if (line == 0) glColor3f(1.0f, 1.0f, 0.0f);
         else glColor3ub(0,255,0);
-        int top = lines.GetEnd();
+	int top = Producer->GetEnd();
         if (top<SampleRate)top=SampleRate;
         for (int x=0;x<top;x++)
         {
@@ -144,7 +146,7 @@ int DrawScreen()
     /*
     {
       int top = lines[0].GetEnd();
-      if (lines[0].IsVisible())
+      if (Visible[0])
       {
       if (top<SampleRate) top = SampleRate;
       glBegin(GL_LINES);
@@ -251,57 +253,79 @@ void initSound()
 #endif
 }
 
-const char *initArgs(int argc,char **argv)
+SeriesProducer *initArgs(int argc,char **argv)
 {
-    const char* dev = "/dev/stdin";
-    help = false;
-    argc--;
-    while (argc ||help)
+  SeriesProducer *Result = 0;
+  const char* dev = "/dev/stdin";
+  help = false;
+  argc--;
+  while (argc ||help)
+  {
+    argv++;
+    if (help || (argc && (strcmp(*argv,"--help")==0) || (strcmp(*argv,"-h")==0)))
     {
-        argv++;
-        if ((argc && strcmp(*argv,"-h")==0) || help)
-        {
-            printf("Usage is scope [-h] [-d dev] [-w W H]\nwhere: -h is help\n  -d assign device\n  -w Width height (eg -w 640 480)\n");
-            return 0;
-        }
-        if (argc && strcmp(*argv,"-d")==0)
-        {
-            argv++;
-            argc--;
-	    argc--;
-            dev = *argv++;
-        }
-
-        if (argc && strcmp(*argv,"-w")==0)
-        {
-            argv++;
-            argc--;
-            width = atoi(*argv++);
-            argc--;
-            height = atoi(*argv++);
-            argc--;
-            help |= (width==0 || height==0);
-        }
+      printf("Usage is scope [-h] [-d dev] [-s simulation] [-w W H]\nwhere: -h is help\n  -d assign device\n-s simulation, of type random or sine\n  -w Width height (eg -w 640 480)\n");
+      return 0;
     }
-    return dev;
+    if (argc && strcmp(*argv,"-d")==0)
+    {
+      argv++;
+      argc--;
+      argc--;
+      dev = *argv++;
+      continue;
+    }
+    if (argc && strcmp(*argv,"-s")==0)	// simulation
+	{
+	  argc--; argv++;
+	  if (strcmp(*argv,"random")==0)
+	  {
+	    argc--; argv++;
+	    Result = new RandomSeriesProducer();
+	    // TODO need to setup parameters for RandomSeriesProducer
+	  }
+	  if (strcmp(*argv,"sine")==0)
+	  {
+	    printf("Sorry sine isn't implemented yet\n");
+	    return 0;
+	    //TODO need to setup sine producer
+	  }
+	  continue;
+	}
+	if (argc && strcmp(*argv,"-w")==0)
+	{
+	  argv++;
+	  argc--;
+	  width = atoi(*argv++);
+	  argc--;
+	  height = atoi(*argv++);
+	  argc--;
+	  help |= (width==0 || height==0);
+	  continue;
+	}
+	help = true; // if got to here then entered an argument we don't understand
+  }
+  if (Result==0)	// not assigned to a simulation, so must be a file
+    {
+      FileSeriesProducer *Result = new FileSeriesProducer();
+      if (Result->openFile(dev)!=0)
+      {
+	printf("could not open %s\n",dev);
+	return 0;
+      }
+      return Result;
+    }
+    return Result;
 }
 
 int main(int argc, char **argv)
 {
     XEvent event;
     unsigned int start;
-    done = False;
-    {
-        const char *dev = initArgs(argc,argv);
-        usb = fopen(dev,"r");
         buff[0] = '\0';
-        if (usb==0)
-        {
-            printf("could not open %s",dev);
-            return 1;
-        }
-    }
-
+    done = False;
+    Producer = initArgs(argc,argv);
+    if (Producer==0) return 1; // no producer we must die
     /* default to fullscreen */
     GLWin.fs = False;
     createGLWindow(title, width, height, GLWin.fs);
@@ -366,11 +390,11 @@ int main(int argc, char **argv)
 
             if (keys[keyCodes[ONE]]) {
                 keys[keyCodes[ONE]] = false;
-                lines.ToggleVisible(0);
+                Visible[0] = !Visible[0];
             }
             if (keys[keyCodes[TWO]]) {
                 keys[keyCodes[TWO]] = false;
-                lines.ToggleVisible(1);
+                Visible[1] = !Visible[1];
             }
 
             if (keys[keyCodes[LEFT]]) {

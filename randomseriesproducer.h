@@ -37,7 +37,7 @@ private:
 public:
     virtual void readSeries();
     RandomSeriesProducer();
-    RandomSeriesProducer( const int min_value, const int max_value, line *series_storage, int num_channels, const int* channels);
+    RandomSeriesProducer( int min_value, int max_value, line *series_storage, int num_channels, const int* channels);
     RandomSeriesProducer(const RandomSeriesProducer& other);
     virtual ~RandomSeriesProducer();
     virtual RandomSeriesProducer& operator=(const RandomSeriesProducer& other);

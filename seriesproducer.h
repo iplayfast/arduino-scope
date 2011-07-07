@@ -31,6 +31,7 @@ class SeriesProducer
 	void setSeriesInfo(line *series_storage, int num_channels, const int* channels);
     public: 
 	virtual void readSeries() = 0;
+	virtual int GetEnd() { return test_series->GetEnd(); }
 };
 
 #endif // SERIESPRODUCER_H
