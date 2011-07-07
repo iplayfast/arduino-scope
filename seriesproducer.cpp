@@ -16,15 +16,42 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
+#include <assert.h>
 #include "seriesproducer.h"
 
-void SeriesProducer::setSeriesInfo(line* series_storage, int num_channels, const int* channels)
+/*void SeriesProducer::setSeriesInfo(line* series_storage, int num_channels, const int* channels)
 {
     test_series = series_storage;
     number_of_channels = num_channels;
     for(int i=0; i<num_channels; i++){
         channel_numbers[i] = channels[i];
     }
+}*/
+
+SeriesProducer::SeriesProducer(int numChannels)
+{
+   number_of_channels = numChannels; 
+   Channels = new ClassFuzzy[numChannels];
 }
 
+SeriesProducer::~SeriesProducer()
+{
+  delete []Channels;
+}
+
+void SeriesProducer::SetSample ( int channel, int time, int value )
+{
+assert(channel>=0 && channel < number_of_channels);
+  Channels[channel].TFuzzyAddPoint(time,value);
+}
+
+int SeriesProducer::GetSample ( int channel, int time ) const
+{
+assert(channel>=0 && channel < number_of_channels);
+  return Channels[channel].Value(time);
+}
+int SeriesProducer::GetEnd ( int channel )
+{
+assert(channel>=0 && channel < number_of_channels);
+  return Channels[channel].HighestRange();
+}

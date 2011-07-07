@@ -21,44 +21,9 @@
 
 void RandomSeriesProducer::readSeries()
 {
-  
     srand((unsigned)time(0));
-    for(int i=0; i<number_of_channels; i++){
-        test_series->AddSample(time(0), channel_numbers[i], min+int((max-min+1)*rand()/(RAND_MAX + 1.0)));
+    int c = GetNumChannels();
+    for(int i=0; i<c; i++){
+	this->SetSample(i,time(0),min+int((max-min+1)*rand()/(RAND_MAX + 1.0)));
     } 
 }
-
-
-RandomSeriesProducer::RandomSeriesProducer()
-{
-
-}
-
-RandomSeriesProducer::RandomSeriesProducer(const int min_value, const int max_value, line *series_storage, int num_channels, const int *channels)
-{
-    setSeriesInfo(series_storage, num_channels, channels);
-    min = min_value;
-    max = max_value;
-}
-
-
-RandomSeriesProducer::RandomSeriesProducer(const RandomSeriesProducer& other)
-{
-
-}
-
-RandomSeriesProducer::~RandomSeriesProducer()
-{
-
-}
-
-RandomSeriesProducer& RandomSeriesProducer::operator=(const RandomSeriesProducer& other)
-{
-    return *this;
-}
-
-bool RandomSeriesProducer::operator==(const RandomSeriesProducer& other) const
-{
-///TODO: return ...;
-}
-

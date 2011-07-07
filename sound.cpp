@@ -56,6 +56,7 @@ void playSound(waveFile* sound) {
 
 void killsound()
 {
+ if (s)
    pa_simple_free(s);
 }
 //	printf("%d %d\n",x,70 + lines[0].GetSample(x));

@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2011  Ralph Janke <email>
+    Copyright (C) 2011  <copyright holder> <email>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,28 +17,24 @@
 */
 
 
-#ifndef FILESERIESPRODUCER_H
-#define FILESERIESPRODUCER_H
+#ifndef ARDUINOPRODUCER_H
+#define ARDUINOPRODUCER_H
+// This producer has 2 channels input with the sequence of 
+// timevalue channel1 channel2
+// the timevalue is simply a counter of ms from the program start
+#include <fileseriesproducer.h>
 
 
-#include "seriesproducer.h"
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include "line.h"
-
-using namespace std;
-
-class FileSeriesProducer : public SeriesProducer
+class ArduinoProducer : public FileSeriesProducer
 {
-protected:
-    ifstream input;
-    int openFile(const char* file_name);
-    void closeFile();
+
 public:
+    ArduinoProducer(char *file_name)
+    {
+      
+    }
+
     virtual void readSeries();
-    FileSeriesProducer(const char *file_name, int num_channels); 
-    virtual ~FileSeriesProducer();
 };
 
-#endif // FILESERIESPRODUCER_H
+#endif // ARDUINOPRODUCER_H

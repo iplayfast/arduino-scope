@@ -20,18 +20,31 @@
 #ifndef SERIESPRODUCER_H
 #define SERIESPRODUCER_H
 
-#include "line.h"
+//#include "line.h"
+#include "TFuzzy.h"
 
-class SeriesProducer
+using namespace Crystal;
+using namespace Fuzzy;
+
+class SeriesProducer 
 {
-    protected:
-	line *test_series;
-	int number_of_channels;
-	int channel_numbers[];
-	void setSeriesInfo(line *series_storage, int num_channels, const int* channels);
+  SeriesProducer() {} // we don't allow this
+  SeriesProducer(SeriesProducer &) {} // we don't allow this either
+ClassFuzzy *Channels;
+int number_of_channels;
     public: 
+	SeriesProducer(int numChannels); 
+	~SeriesProducer();
+      // update from whatever input this class has been used with
 	virtual void readSeries() = 0;
-	virtual int GetEnd() { return test_series->GetEnd(); }
+	int GetNumChannels() const { return number_of_channels; } 
+	void SetSample(int channel,int time,int value);
+	int GetSample(int channel,int time) const;
+	int GetEnd(int channel);
+	void Clear() { for (int i=0;i<number_of_channels;i++) Channels[i].Clear(); }
+	int SampleCount(int channel) const { return Channels[channel].Count(); }
+	int SampleTime(int channel,int SampleIndex) { return Channels[channel].IndexAt(SampleIndex); }
+	int SampleValue(int channel,int SampleIndex) { return Channels[channel].ValueAt(SampleIndex); }
 };
 
 #endif // SERIESPRODUCER_H

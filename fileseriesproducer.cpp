@@ -27,9 +27,10 @@ void FileSeriesProducer::readSeries()
     if (input)
     {
 	input >> time;
-	for(int i=0; i<number_of_channels; i++) {
+	int c = GetNumChannels();
+	for(int i=0; i<c; i++) {
 	    input >> value;
-	    test_series->AddSample(time, channel_numbers[i], value);
+	    this->SetSample(i,time,value);
 	};
     };
 }
@@ -39,7 +40,6 @@ int FileSeriesProducer::openFile(const char* file_name)
     input.open(file_name, ios::in);
     if (input==0)
     {
-      printf("could not open %s", file_name);
       return 1;
     } 
     else
@@ -53,35 +53,20 @@ void FileSeriesProducer::closeFile()
     input.close();
 }
 
-FileSeriesProducer::FileSeriesProducer()
-{
 
+FileSeriesProducer::FileSeriesProducer(const char *file_name, int num_channels) : SeriesProducer(num_channels)
+{  
+    if (openFile(file_name))
+    {
+      throw "could not open ";
+    }
 }
 
-FileSeriesProducer::FileSeriesProducer(char *file_name, line *series_storage, int num_channels, const int *channels)
-{
-    setSeriesInfo(series_storage, num_channels, channels);
-    openFile(file_name);
-}
 
-
-FileSeriesProducer::FileSeriesProducer(const FileSeriesProducer& other)
-{
-
-}
 
 FileSeriesProducer::~FileSeriesProducer()
 {
-
+  closeFile();
 }
 
-FileSeriesProducer& FileSeriesProducer::operator=(const FileSeriesProducer& other)
-{
-    return *this;
-}
-
-bool FileSeriesProducer::operator==(const FileSeriesProducer& other) const
-{
-///TODO: return ...;
-}
 

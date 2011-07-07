@@ -21,41 +21,17 @@ FILE *usb;
 int width=640;
 int height = 480;
 
-line lines;
+
 char buff[100]="";
 int buffcount=0;
 bool help = false;	// shows help screen if true
-bool Visible[2];		// TODO needs to be moved into a display class
+bool Visible[2];		// TODO: needs to be moved into a display class
+int Scale[2];		// TODO: needs to be moved into a display class
 SeriesProducer *Producer;
-void UpdateSamples()
-{
 
-    int t,f,s;
-    int input[CHANNELNUM+1];
-    static int lastf=0,lasts=0;
-    if (!feof(usb))
-    {
-        fgets(buff,100,usb);
-        // time channel1 channel2
-        sscanf(buff,"%d %d %d",&input[0],&input[1],&input[2]);
-        buffcount++;
-    }
-    else {
-        s = lasts;
-        f = lastf;
-    }
-    //printf("%s %d %d\n",buff,f,s);
-    lines.AddSample(input);		//FIXME: since we are now getting the timemark as the first parameter we shouldn't add samples everytime, only when a newone is done
-    char *ch = buff;
-    while (*ch && (*ch!='\n') && (*ch!='\r'))
-        ch++;
-    if ((*ch=='\r')|| (*ch=='\n'))
-        *ch = '\0';
-
-}
 void ResetSamples()
 {
-    lines.Reset();
+    Producer->Clear();
 }
 
 
@@ -105,11 +81,12 @@ int drawGLLine(int line, int yoffset)
         glBegin(GL_LINES);
         if (line == 0) glColor3f(1.0f, 1.0f, 0.0f);
         else glColor3ub(0,255,0);
-	int top = Producer->GetEnd();
+	int top = Producer->GetEnd(line);
         if (top<SampleRate)top=SampleRate;
         for (int x=0;x<top;x++)
         {
-            glVertex2d(20+(int)((400.0*x)/top),yoffset - lines.GetChSample(SampleStart+x, line));
+	int y = Producer->GetSample(line,x);
+            glVertex2d(20+(int)((400.0*x)/top),yoffset - y);
         }
         glEnd();
     }
@@ -132,7 +109,7 @@ int DrawScreen()
     printGLf(20, 4, 1, "Press ? for help");
     glColor3f(1.0f, 1.0f, 0.0f);
 
-    printGLf(20,20,1,"scale 1 = 1/%d, 2 = 1/%d",lines.GetScale(0),lines.GetScale(1));
+    printGLf(20,20,1,"scale 1 = 1/%d, 2 = 1/%d",Scale[0],Scale[1]);
     printGLf(20,40,1,"Sample %0.3f secs offset %d" ,SampleRate/5000.0,SampleStart);
     printGLf(20,60,1,"%d %s ",buffcount,buff);
     if (scopePause) {
@@ -161,24 +138,21 @@ int DrawScreen()
       */
       drawGLLine(0, 270);
     {
-        unsigned int bt = lines.GetBaseTime(),mx = lines.GetMaxTime();
-        unsigned int tt = mx - bt; // total time
-
-        int top = lines.GetEnd();
-        if (top<SampleRate) top = SampleRate;
-        DrawLine(0,height / 2,width,height / 2);
-        if (tt>0)
-        {
-            for (int x=0;x<top;x++)
-            {
-                int st = lines.GetTime(SampleStart+x);
-                GLint tx =  st - bt;
-                tx = 20+tx;
-                DrawLine(tx,290,tx,310);
-
-            }
-            drawGLLine(1, 470);
-        }
+	int numberOfChannels = Producer->GetNumChannels();
+	if (numberOfChannels==0) return 0; // shouldn't happen 
+	int div = height / numberOfChannels;
+	int YLine=0;
+	for(int i=0;i<numberOfChannels;i++)
+	{
+	  YLine += div; // move to bottom of channel
+	  DrawLine(0,YLine,width,YLine); // draw the channel marker
+	  int numsamples = Producer->SampleCount(i);	// number of samples this channel received
+	  for(int s=0;s<numsamples;s++)
+	  {
+	    int st = Producer->SampleTime(i,s);
+	    DrawLine(st,YLine,st,YLine - Producer->SampleValue(i,s)); // draw a tick up to the sample
+	  }
+	}
     }
 
     glLineWidth(1.0f);
@@ -189,10 +163,16 @@ int DrawScreen()
     GLfloat fps;
     t = getMilliSeconds();
     GLfloat sec = (t - t0) / 1000.0;
+ static GLfloat Lastsec = 0;  // a cheat... I know
+    if (Lastsec!=sec)
+    {
+      Lastsec = sec;
+      Producer->Clear();
+    }
     fps = frames / sec;
     if (!scopePause)
     {
-        UpdateSamples();
+       Producer->readSeries();
     }
     if (t - t0 >= 5000) {
         printf("%g FPS\n", fps);
@@ -214,19 +194,19 @@ void keyAction()
         keys[keyCodes[F1]] = False;
     }
     if (keys[keyCodes[A]]) {
-        lines.DecScale(0);
+	Scale[0]--;
         keys[keyCodes[A]] = False;
     }
     if (keys[keyCodes[Q]]) {
-        lines.IncScale(0);
+	Scale[0]++;
         keys[keyCodes[Q]] = False;
     }
     if (keys[keyCodes[W]]) {
-        lines.IncScale(1);
+	Scale[1]++;
         keys[keyCodes[W]] = False;
     }
     if (keys[keyCodes[S]]) {
-        lines.DecScale(1);
+	Scale[1]--;
         keys[keyCodes[S]] = False;
     }
     if (keys[keyCodes[HELP]]) {
@@ -259,9 +239,9 @@ SeriesProducer *initArgs(int argc,char **argv)
   const char* dev = "/dev/stdin";
   help = false;
   argc--;
+  argv++;
   while (argc ||help)
   {
-    argv++;
     if (help || (argc && (strcmp(*argv,"--help")==0) || (strcmp(*argv,"-h")==0)))
     {
       printf("Usage is scope [-h] [-d dev] [-s simulation] [-w W H]\nwhere: -h is help\n  -d assign device\n-s simulation, of type random or sine\n  -w Width height (eg -w 640 480)\n");
@@ -281,7 +261,7 @@ SeriesProducer *initArgs(int argc,char **argv)
 	  if (strcmp(*argv,"random")==0)
 	  {
 	    argc--; argv++;
-	    Result = new RandomSeriesProducer();
+	    Result = new RandomSeriesProducer(0,512,2);
 	    // TODO need to setup parameters for RandomSeriesProducer
 	  }
 	  if (strcmp(*argv,"sine")==0)
@@ -307,13 +287,16 @@ SeriesProducer *initArgs(int argc,char **argv)
   }
   if (Result==0)	// not assigned to a simulation, so must be a file
     {
-      FileSeriesProducer *Result = new FileSeriesProducer();
-      if (Result->openFile(dev)!=0)
+      try
       {
-	printf("could not open %s\n",dev);
+      FileSeriesProducer *Result = new FileSeriesProducer(dev,2); // TODO: assuming 2 channels make more generic
+      return Result;
+      }
+      catch(const char* error)
+      {
+	printf("%s %s\n",error,dev);
 	return 0;
       }
-      return Result;
     }
     return Result;
 }

@@ -36,12 +36,12 @@ private:
   int max;
 public:
     virtual void readSeries();
-    RandomSeriesProducer();
-    RandomSeriesProducer( int min_value, int max_value, line *series_storage, int num_channels, const int* channels);
-    RandomSeriesProducer(const RandomSeriesProducer& other);
-    virtual ~RandomSeriesProducer();
-    virtual RandomSeriesProducer& operator=(const RandomSeriesProducer& other);
-    virtual bool operator==(const RandomSeriesProducer& other) const;
+    RandomSeriesProducer(int Min,int Max,int numChannels) : SeriesProducer(numChannels) {min = Min; max = Max; }
+   // RandomSeriesProducer( int min_value, int max_value, line *series_storage, int num_channels, const int* channels);
+   // RandomSeriesProducer(const RandomSeriesProducer& other);
+   // virtual ~RandomSeriesProducer();
+   // virtual RandomSeriesProducer& operator=(const RandomSeriesProducer& other);
+    //virtual bool operator==(const RandomSeriesProducer& other) const;
 };
 
 #endif // RANDOMSERIESPRODUCER_H
